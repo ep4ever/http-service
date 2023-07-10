@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "epforever"
+version = "0.1.0"
+description = "Solar monitoring tool - http service"
+authors = ["ep4ever <victor@ep4ever.com>"]
+license = "Proprietary"
+documentation = "https://www.ep4ever.com/#/documentation"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+python-dotenv = "^0.21.1"
+requests = "^2.31.0"
+tinydb = "^4.7.1"
+
+[tool.poetry.scripts]
+http_service = 'epforever.entrypoint:start'
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
