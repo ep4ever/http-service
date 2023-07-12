@@ -162,6 +162,9 @@ class Device(BaseCommand):
         date = self.args.get('date')
         timeval = self.args.get('time')
 
+        if date is None:
+            date = 'today'
+
         if (date == 'today'):
             date = datetime.today().strftime("%Y-%m-%d")
 
