@@ -66,8 +66,7 @@ class Device(BaseCommand):
     def getDeviceList(self):
         device_list = []
         for device in self.config.get('devices'):
-            print("appending value is {}".format(device))
-            device_list.append(device)
+            device_list.append(device.get('name'))
 
         return {
             "status_code": 200,
