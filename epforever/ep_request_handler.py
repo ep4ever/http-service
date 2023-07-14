@@ -6,7 +6,6 @@ import json
 import mimetypes
 from urllib.parse import urlparse
 from epforever.routes import *  # noqa: F403,F401
-from epforever.routes import default_config
 
 
 class EpRequestHandler(BaseHTTPRequestHandler):
@@ -72,13 +71,8 @@ class EpRequestHandler(BaseHTTPRequestHandler):
             sys.exit(1)
 
         if not os.path.isfile(lconfig):
-            # we write the default configuration file
-            curr_config = default_config()
-            with open(lconfig, 'w') as file:
-                file.write(json.dumps(curr_config, indent=4))
-            print(
-                "API WARNING: main configuration file created!"
-            )
+            print("API ERROR: main config.json could not be read")
+            sys.exit(1)
 
         f = open(lconfig)
         self.config = json.load(f)
@@ -166,6 +160,7 @@ class EpRequestHandler(BaseHTTPRequestHandler):
         return response.encode('utf-8')
 
     def _handle_post_api_call(self, path_tokens: dict) -> bytes:
+        print("API WARNING: post api call is not implemented yet...")
         content_len = int(self.headers.get('Content-Length'))
         post_body = self.rfile.read(content_len)
         return self._handle_api_call(path_tokens, post_body)

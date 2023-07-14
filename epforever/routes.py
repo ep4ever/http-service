@@ -1,58 +1,7 @@
 import json
 import os
-import time
 from datetime import datetime
 from tinydb import TinyDB, Query
-
-
-def default_config():
-    return {
-        "db_folder": "dbfiles",
-        "nightenv_filepath": ".nightenv",
-        "devices": [],
-        "datas": [
-            {
-                "fieldname": "device_temp",
-                "width": 85,
-                "format": "valueFormatterNumber"
-            },
-            {
-                "fieldname": "rated_voltage",
-                "width": 85,
-                "format": "valueFormatterNumber"
-            },
-            {
-                "fieldname": "rated_current",
-                "width": 85,
-                "format": "valueFormatterNumber"
-            },
-            {
-                "fieldname": "rated_watt",
-                "width": 85,
-                "format": "valueFormatterNumber"
-            },
-            {
-                "fieldname": "battery_voltage",
-                "width": 85,
-                "format": "valueFormatterNumber"
-            },
-            {
-                "fieldname": "battery_current",
-                "width": 85,
-                "format": "valueFormatterNumber"
-            },
-            {
-                "fieldname": "battery_soc",
-                "width": 85,
-                "format": "valueFormatterPct"
-            },
-            {
-                "fieldname": "load_watt",
-                "width": 85,
-                "format": "valueFormatterNumber"
-            }
-        ]
-    }
 
 
 class BaseCommand:
@@ -111,40 +60,13 @@ class Device(BaseCommand):
         if self.path == '/list':
             return self.getDeviceList()
 
-        if self.path == '/edit':
-            device_exists = False
-            device_info = json.loads(post_body)
-
-            f = open(self.configFilePath)
-            curr_config = json.load(f)
-            f.close()
-
-            for device in curr_config.get('devices'):
-                if device.get('name') == device_info.get('deviceName'):
-                    device_exists = True
-                    device['port'] = device_info.get('devicePort')
-
-            if not device_exists:
-                curr_config.get('devices').append({
-                    "name": device_info.get('deviceName'),
-                    "port": device_info.get('devicePort')
-                })
-
-            with open(self.configFilePath, 'w') as file:
-                file.write(json.dumps(curr_config, indent=4))
-
-            device_info['isNew'] = not device_exists
-            return {
-                "status_code": 200,
-                "content": json.dumps(device_info)
-            }
-
         device_name = self.path[1:]
         return self.getDeviceData(device_name)
 
     def getDeviceList(self):
         device_list = []
         for device in self.config.get('devices'):
+            print("appending value is {}".format(device))
             device_list.append(device)
 
         return {
@@ -223,22 +145,14 @@ class Config(BaseCommand):
             f = open(self.configFilePath)
             curr_config = json.load(f)
             f.close()
-        else:
-            curr_config = default_config()
-            with open(self.configFilePath, 'w') as file:
-                file.write(json.dumps(curr_config, indent=4))
-
-        if post_body is not None:
-            config_info = json.loads(post_body)
-            print("received body content is {}".format(config_info))
-            curr_config = {**curr_config, **config_info}
-
-            with open(self.configFilePath, 'w') as file:
-                file.write(json.dumps(curr_config, indent=4))
+            return {
+                "status_code": 200,
+                "content": json.dumps(curr_config)
+            }
 
         return {
-            "status_code": 200,
-            "content": json.dumps(curr_config)
+            "status_code": 404,
+            "content": "Not found"
         }
 
 
@@ -251,7 +165,7 @@ class Nightenv(BaseCommand):
 
         if not os.path.exists(nightenv_path):
             print("warning nightenv file does not exists")
-            return 'KO'
+            return '{0:.2f}'.format(0)
 
         env_content = ()
         with open(nightenv_path) as f:
