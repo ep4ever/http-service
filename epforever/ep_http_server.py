@@ -2,8 +2,11 @@ from http.server import HTTPServer
 from socketserver import ThreadingMixIn
 import base64
 import ssl
+import sys
 
 from epforever.ep_request_handler import EpRequestHandler
+from epforever.handlers.tinydb_handler import TinyDBHandler
+from epforever.handlers.mariadb_handler import MariaDBHandler
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -35,7 +38,13 @@ class EpHttpServer:
 
         # no threading available on windows (it runs) ?
         # self.httpd = HTTPServer(server_address, EpRequestHandler)
-        self.httpd = ThreadedHTTPServer(server_address, EpRequestHandler)
+        if self.config.get('MODE') == 'tiny':
+            self.httpd = ThreadedHTTPServer(server_address, TinyDBHandler)
+        elif self.config.get('MODE') == 'maria':
+            self.httpd = ThreadedHTTPServer(server_address, MariaDBHandler)
+        else:
+            print("ERR: .env MODE key is missing. Must be tiny or maria value")
+            sys.exit(1)
 
         if int(self.config.get('USE_SSL', 0)) == 1:
             context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)

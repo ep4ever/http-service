@@ -2,10 +2,9 @@ from http.server import BaseHTTPRequestHandler
 from socketserver import BaseServer
 import os
 import sys
-import json
 import mimetypes
 from urllib.parse import urlparse
-from epforever.routes import *  # noqa: F403,F401
+from epforever.handlers.routes import Routes
 
 
 class EpRequestHandler(BaseHTTPRequestHandler):
@@ -32,7 +31,7 @@ class EpRequestHandler(BaseHTTPRequestHandler):
     """Ctor"""
     def __init__(self, request: any, client_address: any, server: BaseServer):
         self.__load_web_root()
-        self.__load_config()
+        self._load_config()
 
         myip = EpRequestHandler.CONFIG.get('SERVER_IP', '127.0.0.1')
         myport = EpRequestHandler.CONFIG.get('SERVER_PORT', '8180')
@@ -64,19 +63,18 @@ class EpRequestHandler(BaseHTTPRequestHandler):
 
         self.webroot = lroot
 
-    def __load_config(self):
-        lconfig = EpRequestHandler.CONFIG.get('MAIN_CONFIG_PATH', None)
-        if lconfig is None:
-            print("API ERROR: Missing config file MAIN_CONFIG_PATH")
-            sys.exit(1)
+    """
+    Loads the config object needed by the handler and put it in self.config
+    attribute.
+    """
+    def _load_config(self):
+        raise NotImplementedError("_load_config method must be overrided")
 
-        if not os.path.isfile(lconfig):
-            print("API ERROR: main config.json could not be read")
-            sys.exit(1)
-
-        f = open(lconfig)
-        self.config = json.load(f)
-        f.close()
+    """
+    Returns the class that handle routes call
+    """
+    def _get_class(self):
+        raise NotImplementedError("_get_class method must be overrided")
 
     def _handle_request(self, method: str):
         if self.__needs_auth():
@@ -99,13 +97,12 @@ class EpRequestHandler(BaseHTTPRequestHandler):
     def _run_command(self, path_tokens: dict, post_body: any = None) -> dict:
         root = path_tokens.path[4:]
         domain = root.split('/')[1]
-
-        try:
-            Class = globals()[domain.capitalize()]
-        except KeyError:
-            print(f"ERROR: Domain {domain} does not exists")
-            return False
-
+        Class = self._get_class(domain)
+        if not issubclass(Class, Routes):
+            print(
+                "ERR: Route handler must inherit from epforver.handlers.Routes"
+            )
+            sys.exit(1)
         try:
             instance = Class(
                 path=root[len(domain)+1:],
