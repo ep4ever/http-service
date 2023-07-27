@@ -1,40 +1,11 @@
-import json
 import os
-from datetime import datetime
+import json
+import tempfile
 from tinydb import TinyDB, Query
+from epforever.handlers.routes import Routes
 
 
-class BaseCommand:
-    configFilePath: str
-
-    def __init__(self, path: str, query: str, config: dict):
-        self.path = path
-        if self.path.count('/') > 1:
-            raise ValueError(
-                f"composed path is not yet supported: {self.path}"
-            )
-
-        self.query = query
-        self.args = self._query_to_args()
-        self.config = config
-
-    def execute(self, post_body: any = None) -> dict:
-        return self.args
-
-    def _query_to_args(self):
-        args = {}
-        tokens = self.query.split('&')
-
-        for token in tokens:
-            k = token.split('=')
-            if (k[0] == ''):
-                continue
-            args[k[0]] = k[1]
-
-        return args
-
-
-class Datasource_list(BaseCommand):
+class Datasource_list(Routes):
     def execute(self, post_body: any = None) -> dict:
         p = self.config.get('db_folder')
         files = []
@@ -55,7 +26,7 @@ class Datasource_list(BaseCommand):
         }
 
 
-class Device(BaseCommand):
+class Device(Routes):
     def execute(self, post_body: any = None) -> dict:
         if self.path == '/list':
             return self.getDeviceList()
@@ -73,21 +44,11 @@ class Device(BaseCommand):
             "content": json.dumps(device_list)
         }
 
-    def getDeviceData(self, device_name: str) -> dict:
-        devices = []
-        if '_' in device_name:
-            devices = device_name.split('_')
-        else:
-            devices.append(device_name)
-
-        date = self.args.get('date')
+    def getDeviceData(self, device_name: str, isTiny: bool = True) -> dict:
+        devices = self._devices_from_name(device_name)
+        date = self._date_from_arg(self.args.get('date'))
         timeval = self.args.get('time')
-
-        if date is None:
-            date = 'today'
-
-        if (date == 'today'):
-            date = datetime.today().strftime("%Y-%m-%d")
+        datas = []
 
         db_name = f"{date}.json"
         db_path = os.path.join(self.config.get('db_folder'), db_name)
@@ -99,7 +60,6 @@ class Device(BaseCommand):
 
         db = TinyDB(db_path)
         q = Query()
-        datas = []
         resultCounter = []
 
         for device in devices:
@@ -114,7 +74,7 @@ class Device(BaseCommand):
             for presult in resultCounter:
                 if len(result) != presult.get('count'):
                     # count mismatch
-                    print("WARN: mimatch count from {} and presult {}".format(
+                    print("WARN: mimatch count from {} and presult {}".format(  # noqa: E501
                         len(result),
                         presult.get('count')
                     ))
@@ -126,8 +86,12 @@ class Device(BaseCommand):
 
             datas += result
 
+        datasorted = sorted(
+            datas,
+            key=lambda data: (data['timestamp'], data['device'])
+        )
         results = {
-            'result': datas
+            'result': datasorted
         }
 
         return {
@@ -136,7 +100,7 @@ class Device(BaseCommand):
         }
 
 
-class Config(BaseCommand):
+class Config(Routes):
     def execute(self, post_body: any = None) -> dict:
         curr_config = {}
 
@@ -155,12 +119,12 @@ class Config(BaseCommand):
         }
 
 
-class Nightenv(BaseCommand):
+class Nightenv(Routes):
     def execute(self, post_body: any = None) -> dict:
-        nightenv_path = self.config.get('nightenv_filepath', '')
-        if nightenv_path == '':
-            print("warning no night environment file provided in config.json")
-            return 'KO'
+        nightenv_path = os.path.join(
+            tempfile.gettempdir(),
+            '.nightenv'
+        )
 
         if not os.path.exists(nightenv_path):
             print("warning nightenv file does not exists")
@@ -185,4 +149,4 @@ class Nightenv(BaseCommand):
             result = amount / length
             return '{0:.2f}'.format(result)
 
-        return 0
+        return '{0:.2f}'.format(0)
