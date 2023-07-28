@@ -10,7 +10,7 @@ class BaseSqliteDBRoutes(Routes):
     def getCnx(self):
         dbpath = self.config.get('DB_PATH')
         self.connection = sqlite3.connect(
-            "file:///{}?mode=ro".format(dbpath),
+            "file:{}?mode=ro".format(dbpath),
             uri=True,
             check_same_thread=False
         )
