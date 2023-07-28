@@ -7,6 +7,7 @@ import sys
 from epforever.ep_request_handler import EpRequestHandler
 from epforever.handlers.tinydb_handler import TinyDBHandler
 from epforever.handlers.mariadb_handler import MariaDBHandler
+from epforever.handlers.sqlitedb_handler import SqliteDBHandler
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -42,6 +43,8 @@ class EpHttpServer:
             self.httpd = ThreadedHTTPServer(server_address, TinyDBHandler)
         elif self.config.get('MODE') == 'maria':
             self.httpd = ThreadedHTTPServer(server_address, MariaDBHandler)
+        elif self.config.get('MODE') == 'sqlite':
+            self.httpd = ThreadedHTTPServer(server_address, SqliteDBHandler)
         else:
             print("ERR: .env MODE key is missing. Must be tiny or maria value")
             sys.exit(1)
