@@ -26,7 +26,9 @@ class Datasource_list(BaseMariaDBRoutes):
     def execute(self, post_body: any = None) -> dict:
         cursor = self.getCnx()
         cursor.execute("""
-            SELECT DISTINCT DATE_FORMAT(DATE(date), '%Y-%m-%d') FROM data
+            SELECT DATE_FORMAT(datestamp, '%Y-%m-%d')
+            FROM diary
+            ORDER BY datestamp
         """)
         sources = cursor.fetchall()
         self.closeCnx()
@@ -77,7 +79,7 @@ class Device(BaseMariaDBRoutes):
         cursor = self.getCnx()
 
         for device in devices:
-            cursor.execute(sql, (date, device, timeval))
+            cursor.execute(sql, (date, date, device, timeval))
             records = cursor.fetchall()
             result = list()
             for record in records:
@@ -130,7 +132,7 @@ class Device(BaseMariaDBRoutes):
             FROM data z
             JOIN device d ON d.id  = z.device_id
             JOIN field f ON f.id = z.field_id
-            WHERE DATE_FORMAT(DATE(z.date), '%%Y-%%m-%%d') = %s
+            WHERE z.date >= %s && z.date < (%s + INTERVAL 1 DAY)
             AND d.name = %s
             AND DATE_FORMAT(TIME(z.date), '%%T') > %s
             GROUP BY d.name, TIME(z.`date`)
