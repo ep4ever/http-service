@@ -6,7 +6,7 @@ from dotenv import dotenv_values
 from epforever.ep_http_server import EpHttpServer
 
 
-def exit_now(signum, frame):
+def exit_now(signum, frame):  # pyright: ignore
     print("\nShuting down server...")
     sys.exit(0)
 

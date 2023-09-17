@@ -7,7 +7,7 @@ from epforever.handlers.routes import Routes
 
 
 class Datasource_list(Routes):
-    def execute(self, post_body=None) -> dict:
+    def execute(self) -> dict:
         p: str = str(self.config.get('db_folder'))
         files = []
         if p != '':
@@ -28,7 +28,7 @@ class Datasource_list(Routes):
 
 
 class Device(Routes):
-    def execute(self, post_body=None) -> dict:
+    def execute(self) -> dict:
         if self.path == '/list':
             return self.getDeviceList()
 
@@ -46,7 +46,7 @@ class Device(Routes):
             "content": json.dumps(device_list)
         }
 
-    def getDeviceData(self, device_name: str, isTiny: bool = True) -> dict:
+    def getDeviceData(self, device_name: str) -> dict:
         devices = self._devices_from_name(device_name)
         date = self._date_from_arg(self.args.get('date'))
         timeval = self.args.get('time')
@@ -106,7 +106,7 @@ class Device(Routes):
 
 
 class Config(Routes):
-    def execute(self, post_body=None) -> dict:
+    def execute(self) -> dict:
         curr_config = {}
 
         if (os.path.exists(self.configFilePath)):
@@ -125,7 +125,7 @@ class Config(Routes):
 
 
 class Nightenv(Routes):
-    def execute(self, post_body=None) -> dict:
+    def execute(self) -> dict:
         nightenv_path = os.path.join(
             tempfile.gettempdir(),
             '.nightenv'

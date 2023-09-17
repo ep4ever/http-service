@@ -22,7 +22,7 @@ class BaseSqliteDBRoutes(Routes):
 
 
 class Datasource_list(BaseSqliteDBRoutes):
-    def execute(self, post_body=None) -> dict:
+    def execute(self) -> dict:
         cursor = self.getCnx()
         cursor.execute("SELECT DISTINCT DATE(date) AS datelist FROM data")
         records = cursor.fetchall()
@@ -39,7 +39,7 @@ class Datasource_list(BaseSqliteDBRoutes):
 
 
 class Device(BaseSqliteDBRoutes):
-    def execute(self, post_body=None) -> dict:
+    def execute(self) -> dict:
         if self.path == '/list':
             cursor = self.getCnx()
             cursor.execute("SELECT name from device")
@@ -56,7 +56,7 @@ class Device(BaseSqliteDBRoutes):
             }
 
         device_name = self.path[1:]
-        return self.getDeviceData(device_name, False)
+        return self.getDeviceData(device_name)
 
     def getDeviceList(self):
         device_list = []
@@ -69,7 +69,7 @@ class Device(BaseSqliteDBRoutes):
             "content": json.dumps(device_list)
         }
 
-    def getDeviceData(self, device_name: str, isTiny: bool = True) -> dict:
+    def getDeviceData(self, device_name: str) -> dict:
         datas = []
         devices = self._devices_from_name(device_name)
         date = self._date_from_arg(self.args.get('date'))
@@ -142,7 +142,7 @@ class Device(BaseSqliteDBRoutes):
 
 
 class Config(BaseSqliteDBRoutes):
-    def execute(self, post_body=None) -> dict:
+    def execute(self) -> dict:
         response = {
             'datas': [],
             'devices': []
@@ -181,7 +181,7 @@ class Config(BaseSqliteDBRoutes):
 
 
 class Nightenv(BaseSqliteDBRoutes):
-    def execute(self, post_body=None) -> dict:
+    def execute(self) -> dict:
         cursor = self.getCnx()
 
         cursor.execute(

@@ -25,6 +25,8 @@ class EpRequestHandler(BaseHTTPRequestHandler):
     def __init__(self, request, client_address, server):
         self.config: dict = {}
         self.server_addr: str = ''
+        # note that post body is actually not handled
+        self.post_body: bytes | None = None
 
         self.__load_web_root()
         self._load_config()
@@ -52,7 +54,7 @@ class EpRequestHandler(BaseHTTPRequestHandler):
         self._handle_request('post')
 
     def __load_web_root(self):
-        lroot = EpRequestHandler.CONFIG.get('WEB_ROOT_PATH', '')
+        lroot: str = EpRequestHandler.CONFIG.get('WEB_ROOT_PATH', '')
         if not os.path.isdir(lroot):
             print("API ERROR: Missing webroot folder WEB_ROOT_PATH")
             sys.exit(1)
@@ -76,6 +78,8 @@ class EpRequestHandler(BaseHTTPRequestHandler):
         if self.__needs_auth():
             return
 
+        # reset post body content
+        self.post_body = None
         path_tokens: ParseResult = urlparse(self.path)
         response: bytes = b''
         if self.config is not None and path_tokens.path.startswith('/api'):
@@ -92,8 +96,7 @@ class EpRequestHandler(BaseHTTPRequestHandler):
 
     def _run_command(
         self,
-        path_tokens: ParseResult,
-        post_body=None
+        path_tokens: ParseResult
     ) -> dict | bool:
         root = path_tokens.path[4:]
         domain = root.split('/')[1]
@@ -116,7 +119,7 @@ class EpRequestHandler(BaseHTTPRequestHandler):
         except ValueError as err:
             print(err)
             return False
-        return instance.execute(post_body)
+        return instance.execute()
 
     def __needs_auth(self) -> bool:
         if EpRequestHandler.KEY is None or EpRequestHandler.KEY == b'':
@@ -136,10 +139,9 @@ class EpRequestHandler(BaseHTTPRequestHandler):
 
     def _handle_api_call(
         self,
-        path_tokens: ParseResult,
-        post_body=None
+        path_tokens: ParseResult
     ) -> bytes:
-        response = self._run_command(path_tokens, post_body)
+        response = self._run_command(path_tokens)
         if not response:
             response = "API Error"
             self.send_response(400)
@@ -159,8 +161,8 @@ class EpRequestHandler(BaseHTTPRequestHandler):
     def _handle_post_api_call(self, path_tokens: ParseResult) -> bytes:
         print("API WARNING: post api call is not implemented yet...")
         content_len = int(str(self.headers.get('Content-Length')))
-        post_body = self.rfile.read(content_len)
-        return self._handle_api_call(path_tokens, post_body)
+        self.post_body = self.rfile.read(content_len)
+        return self._handle_api_call(path_tokens)
 
     def _handle_web_call(self, path_tokens: ParseResult) -> bytes:
         if (path_tokens.path == '/'):
