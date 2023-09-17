@@ -1,9 +1,9 @@
 from http.server import BaseHTTPRequestHandler
-from socketserver import BaseServer
+import mimetypes
 import os
 import sys
-import mimetypes
-from urllib.parse import urlparse
+from urllib.parse import ParseResult, urlparse
+
 from epforever.handlers.routes import Routes
 
 
@@ -17,19 +17,15 @@ class EpRequestHandler(BaseHTTPRequestHandler):
     override BaseHTTPRequestHandler::sys_version
     """
     sys_version: str = ''
-    """
-    instance attributes
-    """
-    server_addr: str = ''
-    config = None
-    """
-    qualifier attributes
-    """
-    KEY = None
+
+    KEY: bytes = b''
     CONFIG: dict = {}
 
     """Ctor"""
-    def __init__(self, request: any, client_address: any, server: BaseServer):
+    def __init__(self, request, client_address, server):
+        self.config: dict = {}
+        self.server_addr: str = ''
+
         self.__load_web_root()
         self._load_config()
 
@@ -80,8 +76,8 @@ class EpRequestHandler(BaseHTTPRequestHandler):
         if self.__needs_auth():
             return
 
-        path_tokens = urlparse(self.path)
-
+        path_tokens: ParseResult = urlparse(self.path)
+        response: bytes = b''
         if self.config is not None and path_tokens.path.startswith('/api'):
             if method == 'get':
                 response = self._handle_api_call(path_tokens)
@@ -94,10 +90,14 @@ class EpRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(response)
 
-    def _run_command(self, path_tokens: dict, post_body: any = None) -> dict:
+    def _run_command(
+        self,
+        path_tokens: ParseResult,
+        post_body=None
+    ) -> dict | bool:
         root = path_tokens.path[4:]
         domain = root.split('/')[1]
-        Class = self._get_class(domain)
+        Class = self._get_class(domain)  # pyright: ignore
         if not issubclass(Class, Routes):
             print(
                 "ERR: Route handler must inherit from epforver.handlers.Routes"
@@ -119,7 +119,7 @@ class EpRequestHandler(BaseHTTPRequestHandler):
         return instance.execute(post_body)
 
     def __needs_auth(self) -> bool:
-        if EpRequestHandler.KEY is None:
+        if EpRequestHandler.KEY is None or EpRequestHandler.KEY == b'':
             return False
 
         auth = self.headers.get('Authorization')
@@ -136,8 +136,8 @@ class EpRequestHandler(BaseHTTPRequestHandler):
 
     def _handle_api_call(
         self,
-        path_tokens: dict,
-        post_body: any = None
+        path_tokens: ParseResult,
+        post_body=None
     ) -> bytes:
         response = self._run_command(path_tokens, post_body)
         if not response:
@@ -152,17 +152,17 @@ class EpRequestHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
 
         if isinstance(response, dict):
-            return response.get('content').encode('utf-8')
+            return str(response.get('content')).encode('utf-8')
 
-        return response.encode('utf-8')
+        return str(response).encode('utf-8')
 
-    def _handle_post_api_call(self, path_tokens: dict) -> bytes:
+    def _handle_post_api_call(self, path_tokens: ParseResult) -> bytes:
         print("API WARNING: post api call is not implemented yet...")
-        content_len = int(self.headers.get('Content-Length'))
+        content_len = int(str(self.headers.get('Content-Length')))
         post_body = self.rfile.read(content_len)
         return self._handle_api_call(path_tokens, post_body)
 
-    def _handle_web_call(self, path_tokens: dict) -> bytes:
+    def _handle_web_call(self, path_tokens: ParseResult) -> bytes:
         if (path_tokens.path == '/'):
             filepath = self.webroot + '/index.html'
         else:
@@ -174,7 +174,7 @@ class EpRequestHandler(BaseHTTPRequestHandler):
 
         self.send_response(200)
 
-        mtype = mimetypes.guess_type(filepath)[0]
+        mtype: str = str(mimetypes.guess_type(filepath)[0])
         self.send_header(
             'server_addr',
             self.server_addr

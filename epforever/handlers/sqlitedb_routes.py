@@ -1,11 +1,10 @@
 import sqlite3
 import json
+from typing import cast
 from epforever.handlers.routes import Routes
 
 
 class BaseSqliteDBRoutes(Routes):
-    connection: None
-    cursor: None
 
     def getCnx(self):
         dbpath = self.config.get('DB_PATH')
@@ -23,7 +22,7 @@ class BaseSqliteDBRoutes(Routes):
 
 
 class Datasource_list(BaseSqliteDBRoutes):
-    def execute(self, post_body: any = None) -> dict:
+    def execute(self, post_body=None) -> dict:
         cursor = self.getCnx()
         cursor.execute("SELECT DISTINCT DATE(date) AS datelist FROM data")
         records = cursor.fetchall()
@@ -40,7 +39,7 @@ class Datasource_list(BaseSqliteDBRoutes):
 
 
 class Device(BaseSqliteDBRoutes):
-    def execute(self, post_body: any = None) -> dict:
+    def execute(self, post_body=None) -> dict:
         if self.path == '/list':
             cursor = self.getCnx()
             cursor.execute("SELECT name from device")
@@ -61,7 +60,8 @@ class Device(BaseSqliteDBRoutes):
 
     def getDeviceList(self):
         device_list = []
-        for device in self.config.get('devices'):
+        devices: list = cast(list, self.config.get('devices'))
+        for device in devices:
             device_list.append(device.get('name'))
 
         return {
@@ -142,7 +142,7 @@ class Device(BaseSqliteDBRoutes):
 
 
 class Config(BaseSqliteDBRoutes):
-    def execute(self, post_body: any = None) -> dict:
+    def execute(self, post_body=None) -> dict:
         response = {
             'datas': [],
             'devices': []
@@ -181,7 +181,7 @@ class Config(BaseSqliteDBRoutes):
 
 
 class Nightenv(BaseSqliteDBRoutes):
-    def execute(self, post_body: any = None) -> dict:
+    def execute(self, post_body=None) -> dict:
         cursor = self.getCnx()
 
         cursor.execute(
@@ -193,4 +193,7 @@ class Nightenv(BaseSqliteDBRoutes):
         record = cursor.fetchone()
 
         self.closeCnx()
-        return '{0:.2f}'.format(record[0])
+        return {
+            "status_code": 200,
+            "content": '{0:.2f}'.format(record[0])
+        }

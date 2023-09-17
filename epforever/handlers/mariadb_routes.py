@@ -1,14 +1,15 @@
+from typing import cast
 import MySQLdb
 import json
+
+from MySQLdb.connections import Connection
 from epforever.handlers.routes import Routes
 
 
 class BaseMariaDBRoutes(Routes):
-    connection: None
-    cursor: None
 
     def getCnx(self):
-        self.connection = MySQLdb.connect(
+        self.connection: Connection = MySQLdb.connect(
             user=self.config.get('DB_USER'),
             password=self.config.get('DB_PWD'),
             host=self.config.get('DB_HOST'),
@@ -23,7 +24,7 @@ class BaseMariaDBRoutes(Routes):
 
 
 class Datasource_list(BaseMariaDBRoutes):
-    def execute(self, post_body: any = None) -> dict:
+    def execute(self, post_body=None) -> dict:
         cursor = self.getCnx()
         cursor.execute("""
             SELECT DATE_FORMAT(datestamp, '%Y-%m-%d')
@@ -40,7 +41,7 @@ class Datasource_list(BaseMariaDBRoutes):
 
 
 class Device(BaseMariaDBRoutes):
-    def execute(self, post_body: any = None) -> dict:
+    def execute(self, post_body=None) -> dict:
         if self.path == '/list':
             cursor = self.getCnx()
             cursor.execute("SELECT name from device")
@@ -61,7 +62,8 @@ class Device(BaseMariaDBRoutes):
 
     def getDeviceList(self):
         device_list = []
-        for device in self.config.get('devices'):
+        devices: list = cast(list, self.config.get('devices'))
+        for device in devices:
             device_list.append(device.get('name'))
 
         return {
@@ -141,7 +143,7 @@ class Device(BaseMariaDBRoutes):
 
 
 class Config(BaseMariaDBRoutes):
-    def execute(self, post_body: any = None) -> dict:
+    def execute(self, post_body=None) -> dict:
         response = {
             'datas': [],
             'devices': []
@@ -180,7 +182,7 @@ class Config(BaseMariaDBRoutes):
 
 
 class Nightenv(BaseMariaDBRoutes):
-    def execute(self, post_body: any = None) -> dict:
+    def execute(self, post_body=None) -> dict:
         cursor = self.getCnx()
 
         cursor.execute(
@@ -192,4 +194,7 @@ class Nightenv(BaseMariaDBRoutes):
         record = cursor.fetchone()
 
         self.closeCnx()
-        return '{0:.2f}'.format(record[0])
+        return {
+            "status_code": 200,
+            "content": '{0:.2f}'.format(record[0])
+        }
