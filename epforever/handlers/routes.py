@@ -15,7 +15,7 @@ class Routes:
         self.args = self._query_to_args()
         self.config = config
 
-    def execute(self, post_body: any = None) -> dict:
+    def execute(self, post_body=None) -> dict:
         return self.args
 
     def _query_to_args(self):

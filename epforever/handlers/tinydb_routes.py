@@ -1,13 +1,14 @@
 import os
 import json
 import tempfile
+from typing import cast
 from tinydb import TinyDB, Query
 from epforever.handlers.routes import Routes
 
 
 class Datasource_list(Routes):
-    def execute(self, post_body: any = None) -> dict:
-        p = self.config.get('db_folder')
+    def execute(self, post_body=None) -> dict:
+        p: str = str(self.config.get('db_folder'))
         files = []
         if p != '':
             files = [
@@ -27,7 +28,7 @@ class Datasource_list(Routes):
 
 
 class Device(Routes):
-    def execute(self, post_body: any = None) -> dict:
+    def execute(self, post_body=None) -> dict:
         if self.path == '/list':
             return self.getDeviceList()
 
@@ -36,7 +37,8 @@ class Device(Routes):
 
     def getDeviceList(self):
         device_list = []
-        for device in self.config.get('devices'):
+        devices: list = cast(list, self.config.get('devices'))
+        for device in devices:
             device_list.append(device.get('name'))
 
         return {
@@ -51,12 +53,15 @@ class Device(Routes):
         datas = []
 
         db_name = f"{date}.json"
-        db_path = os.path.join(self.config.get('db_folder'), db_name)
+        db_path = os.path.join(str(self.config.get('db_folder')), db_name)
 
         if not os.path.isfile(db_path):
-            return json.dumps(
-                {"error": f"Database {db_name} not found on server"}
-            )
+            return {
+                "status_code": 200,
+                "content":  json.dumps(
+                    {"error": f"Database {db_name} not found on server"}
+                )
+            }
 
         db = TinyDB(db_path)
         q = Query()
@@ -101,7 +106,7 @@ class Device(Routes):
 
 
 class Config(Routes):
-    def execute(self, post_body: any = None) -> dict:
+    def execute(self, post_body=None) -> dict:
         curr_config = {}
 
         if (os.path.exists(self.configFilePath)):
@@ -120,7 +125,7 @@ class Config(Routes):
 
 
 class Nightenv(Routes):
-    def execute(self, post_body: any = None) -> dict:
+    def execute(self, post_body=None) -> dict:
         nightenv_path = os.path.join(
             tempfile.gettempdir(),
             '.nightenv'
@@ -128,7 +133,10 @@ class Nightenv(Routes):
 
         if not os.path.exists(nightenv_path):
             print("warning nightenv file does not exists")
-            return '{0:.2f}'.format(0)
+            return {
+                "status_code": 404,
+                "content": '{0:.2f}'.format(0)
+            }
 
         env_content = ()
         with open(nightenv_path) as f:
@@ -145,8 +153,11 @@ class Nightenv(Routes):
                 length += 1
                 amount += value
 
+        result: str = '{0:.2f}'.format(0)
         if amount and length > 0:
-            result = amount / length
-            return '{0:.2f}'.format(result)
+            result = '{0:.2f}'.format(amount / length)
 
-        return '{0:.2f}'.format(0)
+        return {
+            "status_code": 200,
+            "content": result
+        }

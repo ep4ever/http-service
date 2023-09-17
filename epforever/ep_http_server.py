@@ -1,12 +1,13 @@
+import base64
 from http.server import HTTPServer
 from socketserver import ThreadingMixIn
-import base64
 import ssl
 import sys
 
 from epforever.ep_request_handler import EpRequestHandler
-from epforever.handlers.tinydb_handler import TinyDBHandler
 from epforever.handlers.mariadb_handler import MariaDBHandler
+from epforever.handlers.sqlitedb_handler import SqliteDBHandler
+from epforever.handlers.tinydb_handler import TinyDBHandler
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -14,11 +15,10 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 
 class EpHttpServer:
-    httpd: HTTPServer
-    config: dict
 
     def __init__(self, config: dict):
-        self.config = config
+        self.httpd: HTTPServer = None  # pyright: ignore
+        self.config: dict = config
         EpRequestHandler.CONFIG = self.config
 
     def start(self):
@@ -29,9 +29,9 @@ class EpHttpServer:
         ):
             auth = ''.join(
                 [
-                    self.config.get('USER'),
+                    str(self.config.get('USER')),
                     ':',
-                    self.config.get('PASSWORD')
+                    str(self.config.get('PASSWORD'))
                 ]
             )
             EpRequestHandler.KEY = base64.b64encode(auth.encode('utf-8'))
@@ -42,6 +42,8 @@ class EpHttpServer:
             self.httpd = ThreadedHTTPServer(server_address, TinyDBHandler)
         elif self.config.get('MODE') == 'maria':
             self.httpd = ThreadedHTTPServer(server_address, MariaDBHandler)
+        elif self.config.get('MODE') == 'sqlite':
+            self.httpd = ThreadedHTTPServer(server_address, SqliteDBHandler)
         else:
             print("ERR: .env MODE key is missing. Must be tiny or maria value")
             sys.exit(1)

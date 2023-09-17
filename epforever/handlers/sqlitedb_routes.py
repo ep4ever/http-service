@@ -1,19 +1,17 @@
-from typing import cast
-import MySQLdb
+import sqlite3
 import json
-
-from MySQLdb.connections import Connection
+from typing import cast
 from epforever.handlers.routes import Routes
 
 
-class BaseMariaDBRoutes(Routes):
+class BaseSqliteDBRoutes(Routes):
 
     def getCnx(self):
-        self.connection: Connection = MySQLdb.connect(
-            user=self.config.get('DB_USER'),
-            password=self.config.get('DB_PWD'),
-            host=self.config.get('DB_HOST'),
-            database=self.config.get('DB_NAME')
+        dbpath = self.config.get('DB_PATH')
+        self.connection = sqlite3.connect(
+            "file:{}?mode=ro".format(dbpath),
+            uri=True,
+            check_same_thread=False
         )
         return self.connection.cursor()
 
@@ -23,16 +21,16 @@ class BaseMariaDBRoutes(Routes):
         self.connection.close()
 
 
-class Datasource_list(BaseMariaDBRoutes):
+class Datasource_list(BaseSqliteDBRoutes):
     def execute(self, post_body=None) -> dict:
         cursor = self.getCnx()
-        cursor.execute("""
-            SELECT DATE_FORMAT(datestamp, '%Y-%m-%d')
-            FROM diary
-            ORDER BY datestamp
-        """)
-        sources = cursor.fetchall()
+        cursor.execute("SELECT DISTINCT DATE(date) AS datelist FROM data")
+        records = cursor.fetchall()
         self.closeCnx()
+
+        sources = []
+        for record in records:
+            sources.append(record[0])
 
         return {
             "status_code": 200,
@@ -40,7 +38,7 @@ class Datasource_list(BaseMariaDBRoutes):
         }
 
 
-class Device(BaseMariaDBRoutes):
+class Device(BaseSqliteDBRoutes):
     def execute(self, post_body=None) -> dict:
         if self.path == '/list':
             cursor = self.getCnx()
@@ -81,7 +79,7 @@ class Device(BaseMariaDBRoutes):
         cursor = self.getCnx()
 
         for device in devices:
-            cursor.execute(sql, (date, date, device, timeval))
+            cursor.execute(sql, (date, device, timeval))
             records = cursor.fetchall()
             result = list()
             for record in records:
@@ -105,44 +103,45 @@ class Device(BaseMariaDBRoutes):
 
     def getDeviceDataSql(self) -> str:
         return """
-            SELECT CONCAT(
-                '{',
-                '"device":',
-                '"', d.name, '",',
-                '"datestamp":',
-                '"', DATE_FORMAT(DATE(z.date), '%%Y-%%m-%%d'), '",',
-                '"timestamp":',
-                '"', DATE_FORMAT(TIME(z.date), '%%T'), '",',
-                '"data":',
-                    '[',
-                        GROUP_CONCAT(
-                            CONCAT(
-                                '{',
-                                '"field":',
-                                '"',
-                                f.name,
-                                '"',
-                                ',',
-                                '"value":"',
-                                z.value,
-                                '"}'
-                            )
-                        ),
-                    ']',
-                '}'
-            ) AS json
-            FROM data z
-            JOIN device d ON d.id  = z.device_id
-            JOIN field f ON f.id = z.field_id
-            WHERE z.date >= %s && z.date < (%s + INTERVAL 1 DAY)
-            AND d.name = %s
-            AND DATE_FORMAT(TIME(z.date), '%%T') > %s
-            GROUP BY d.name, TIME(z.`date`)
-            ORDER BY TIME(z.`date`)
+        SELECT
+            '{' ||
+            '"device":' ||
+            '"' || d.name || '",' ||
+            '"datestamp":' ||
+            '"' || DATE(z.date) || '",' ||
+            '"timestamp":' ||
+            '"' || strftime('%H:%M:%S', z.date) || '",' ||
+            '"data":' ||
+                '[' ||
+                    GROUP_CONCAT(
+                        '{' ||
+                        '"field":' ||
+                        '"' ||
+                        f.name ||
+                        '"' ||
+                        ',' ||
+                        '"value":"' ||
+                        z.value ||
+                        '"}'
+                    ) ||
+                ']' ||
+            '}'
+        AS json
+        FROM data z
+        JOIN device d ON d.id  = z.device_id
+        JOIN field f ON f.id = z.field_id
+        WHERE DATE(z.date) = ?
+        AND d.name = ?
+        AND strftime('%H:%M:%S', z.date) > ?
+        GROUP BY
+            d.name,
+            strftime('%H:%M:%S', z.`date`)
+        ORDER BY
+        strftime('%H:%M:%S', z.`date`)
         """
 
 
-class Config(BaseMariaDBRoutes):
+class Config(BaseSqliteDBRoutes):
     def execute(self, post_body=None) -> dict:
         response = {
             'datas': [],
@@ -181,7 +180,7 @@ class Config(BaseMariaDBRoutes):
         }
 
 
-class Nightenv(BaseMariaDBRoutes):
+class Nightenv(BaseSqliteDBRoutes):
     def execute(self, post_body=None) -> dict:
         cursor = self.getCnx()
 
