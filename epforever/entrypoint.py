@@ -12,7 +12,7 @@ def exit_now(signum, frame):  # pyright: ignore
 
 
 def start():
-    config = dotenv_values(".env")
+    config = dotenv_values(dotenv_path=".env")
 
     server = EpHttpServer(config)
     signal.signal(signal.SIGINT, exit_now)
