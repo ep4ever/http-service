@@ -198,3 +198,27 @@ class Nightenv(BaseMariaDBRoutes):
             "status_code": 200,
             "content": '{0:.2f}'.format(record[0])
         }
+
+
+class Consumer(BaseMariaDBRoutes):
+    def execute(self) -> dict:
+        cursor = self.getCnx()
+
+        cursor.execute(
+            """
+            SELECT regkey, watts FROM consumer_view
+            """
+        )
+        fields = cursor.fetchall()
+
+        self.closeCnx()
+        response = {}
+
+        for field in fields:
+            response[field[0]] = field[1]
+
+        return {
+            "status_code": 200,
+            "content": json.dumps(response)
+        }
+
