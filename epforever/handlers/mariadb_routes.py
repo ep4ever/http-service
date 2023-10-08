@@ -221,4 +221,3 @@ class Consumer(BaseMariaDBRoutes):
             "status_code": 200,
             "content": json.dumps(response)
         }
-
