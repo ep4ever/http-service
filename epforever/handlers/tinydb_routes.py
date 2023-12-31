@@ -4,6 +4,7 @@ import tempfile
 from typing import cast
 from tinydb import TinyDB, Query
 from epforever.handlers.routes import Routes
+from dotenv import dotenv_values
 
 
 class Datasource_list(Routes):
@@ -138,20 +139,18 @@ class Nightenv(Routes):
                 "content": '{0:.2f}'.format(0)
             }
 
-        env_content = ()
-        with open(nightenv_path) as f:
-            env_content = f.readlines()
-            f.close()
+        env_content = dotenv_values(nightenv_path)
 
         amount = 0
         length = 0
 
-        for line in env_content:
-            value = float(line.split('=')[1])
-            # only take it if it is greater than zero
-            if value > 0:
-                length += 1
-                amount += value
+        for k, v in env_content.items():
+            if "battery_voltage" in k:
+                value = float(v)
+                # only take it if it is greater than zero
+                if value > 0:
+                    length += 1
+                    amount += value
 
         result: str = '{0:.2f}'.format(0)
         if amount and length > 0:
@@ -160,4 +159,12 @@ class Nightenv(Routes):
         return {
             "status_code": 200,
             "content": result
+        }
+
+
+class Consumer(Routes):
+    def execute(self) -> dict:
+        return {
+            "status_code": 404,
+            "content": {}
         }
