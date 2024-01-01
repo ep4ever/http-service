@@ -164,7 +164,18 @@ class Nightenv(Routes):
 
 class Consumer(Routes):
     def execute(self) -> dict:
+        response = {}
+        keys = ('hv_active_power', 'hv_active_power_etg1')
+
+        for key in keys:
+            f = os.path.join(
+                tempfile.gettempdir(),
+                f".{key}"
+            )
+            env_content = dotenv_values(f)
+            response[key] = env_content.get(key)
+
         return {
-            "status_code": 404,
-            "content": {}
+            "status_code": 200,
+            "content": json.dumps(response)
         }

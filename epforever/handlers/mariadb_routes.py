@@ -187,7 +187,7 @@ class Nightenv(BaseMariaDBRoutes):
 
         cursor.execute(
             """
-            SELECT value FROM dashboard_view
+            SELECT value FROM dashboard
             WHERE identifier = 'batt_voltage'
             """
         )
@@ -206,7 +206,16 @@ class Consumer(BaseMariaDBRoutes):
 
         cursor.execute(
             """
-            SELECT regkey, watts FROM consumer_view
+            select
+                `cd`.`regkey` AS `regkey`,
+                `cd`.`value` AS `watts`
+            from
+                `consumer_data` `cd`
+            where
+                `cd`.`regkey` in ('hv_active_power', 'hv_active_power_etg1')
+            order by
+            `cd`.`id` desc
+            limit 2
             """
         )
         fields = cursor.fetchall()

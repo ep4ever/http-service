@@ -186,7 +186,7 @@ class Nightenv(BaseSqliteDBRoutes):
 
         cursor.execute(
             """
-            SELECT value FROM dashboard_view
+            SELECT value FROM dashboard
             WHERE identifier = 'batt_voltage'
             """
         )
@@ -196,4 +196,36 @@ class Nightenv(BaseSqliteDBRoutes):
         return {
             "status_code": 200,
             "content": '{0:.2f}'.format(record[0])
+        }
+
+
+class Consumer(BaseSqliteDBRoutes):
+    def execute(self) -> dict:
+        cursor = self.getCnx()
+
+        cursor.execute(
+            """
+            select
+                `cd`.`regkey` AS `regkey`,
+                `cd`.`value` AS `watts`
+            from
+                `consumer_data` `cd`
+            where
+                `cd`.`regkey` in ('hv_active_power', 'hv_active_power_etg1')
+            order by
+            `cd`.`id` desc
+            limit 2
+            """
+        )
+        fields = cursor.fetchall()
+
+        self.closeCnx()
+        response = {}
+
+        for field in fields:
+            response[field[0]] = field[1]
+
+        return {
+            "status_code": 200,
+            "content": json.dumps(response)
         }
