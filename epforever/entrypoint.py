@@ -3,7 +3,7 @@ import sys
 
 from dotenv import dotenv_values
 
-from epforever.ep_http_server import EpHttpServer
+from ep_http_server import EpHttpServer
 
 
 def exit_now(signum, frame):  # pyright: ignore

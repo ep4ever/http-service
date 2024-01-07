@@ -4,10 +4,10 @@ from socketserver import ThreadingMixIn
 import ssl
 import sys
 
-from epforever.ep_request_handler import EpRequestHandler
-from epforever.handlers.mariadb_handler import MariaDBHandler
-from epforever.handlers.sqlitedb_handler import SqliteDBHandler
-from epforever.handlers.tinydb_handler import TinyDBHandler
+from ep_request_handler import EpRequestHandler
+from handlers.mariadb_handler import MariaDBHandler
+from handlers.sqlitedb_handler import SqliteDBHandler
+from handlers.tinydb_handler import TinyDBHandler
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):

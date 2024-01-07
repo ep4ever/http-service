@@ -1,6 +1,6 @@
-from epforever.ep_request_handler import EpRequestHandler
-from epforever.handlers.mariadb_handler import MariaDBHandler
-from epforever.handlers.sqlitedb_routes import *  # noqa: F403,F401
+from ep_request_handler import EpRequestHandler
+from handlers.mariadb_handler import MariaDBHandler
+from handlers.sqlitedb_routes import *  # noqa: F403,F401
 
 
 class SqliteDBHandler(MariaDBHandler):

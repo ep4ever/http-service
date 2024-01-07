@@ -1,7 +1,7 @@
 import sqlite3
 import json
 from typing import cast
-from epforever.handlers.routes import Routes
+from handlers.routes import Routes
 
 
 class BaseSqliteDBRoutes(Routes):
@@ -42,7 +42,7 @@ class Device(BaseSqliteDBRoutes):
     def execute(self) -> dict:
         if self.path == '/list':
             cursor = self.getCnx()
-            cursor.execute("SELECT name from device")
+            cursor.execute("SELECT name from device where always_on=0")
             records = cursor.fetchall()
             self.closeCnx()
 
@@ -150,7 +150,7 @@ class Config(BaseSqliteDBRoutes):
 
         cursor = self.getCnx()
 
-        cursor.execute("SELECT name, port FROM device")
+        cursor.execute("SELECT name, port FROM device WHERE always_on=0")
         devices = cursor.fetchall()
         for device in devices:
             response['devices'].append({

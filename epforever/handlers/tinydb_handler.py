@@ -2,8 +2,8 @@ import os
 import sys
 import json
 
-from epforever.ep_request_handler import EpRequestHandler
-from epforever.handlers.tinydb_routes import *  # noqa: F403,F401
+from ep_request_handler import EpRequestHandler
+from handlers.tinydb_routes import *  # noqa: F403,F401
 
 
 class TinyDBHandler(EpRequestHandler):

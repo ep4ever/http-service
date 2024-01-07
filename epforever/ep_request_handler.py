@@ -4,7 +4,7 @@ import os
 import sys
 from urllib.parse import ParseResult, urlparse
 
-from epforever.handlers.routes import Routes
+from handlers.routes import Routes
 
 
 class EpRequestHandler(BaseHTTPRequestHandler):
@@ -40,6 +40,16 @@ class EpRequestHandler(BaseHTTPRequestHandler):
         self.server_addr = '{}{}:{}'.format(scheme, myip, myport)
 
         BaseHTTPRequestHandler.__init__(self, request, client_address, server)
+
+    def do_OPTIONS(self):
+        self.send_response(200, "ok")
+        self.end_headers()
+
+    def end_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header("Access-Control-Allow-Headers", "*")
+        super().end_headers()
 
     def authenticate(self):
         self.send_response(401)
@@ -92,6 +102,7 @@ class EpRequestHandler(BaseHTTPRequestHandler):
             response = self._handle_web_call(path_tokens)
 
         self.end_headers()
+
         self.wfile.write(response)
 
     def _run_command(
